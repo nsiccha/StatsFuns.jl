@@ -31,14 +31,18 @@ function fdistlogpdf(ν1::T, ν2::T, x::T) where {T <: Real}
     end
 end
 
-for f in ("cdf", "ccdf", "logcdf", "logccdf")
+for (f, fc) in (("cdf", "ccdf"), ("ccdf", "cdf"), ("logcdf", "logccdf"), ("logccdf", "logcdf"))
     ff = Symbol("fdist" * f)
     bf = Symbol("beta" * f)
+    bfc = Symbol("beta" * fc)
     @eval function $ff(ν1::T, ν2::T, x::T) where {T <: Real}
-        # the beta variate `u = r / (1 + r)`, clamped to the support. Here an overflowing
-        # `ν1 * x` only saturates `u` to 1, so the ratio is formed that way round
+        # Evaluate the smaller beta argument directly, swapping the parameters and tail
+        # when r > 1. Forming u close to one loses the complementary tail's precision.
         r = (ν1 * max(0, x)) / ν2
-        u = r > 1 ? inv(1 + inv(r)) : r / (1 + r)
+        if r > 1
+            return $bfc(ν2 / 2, ν1 / 2, inv(1 + r))
+        end
+        u = r / (1 + r)
         return $bf(ν1 / 2, ν2 / 2, u)
     end
     @eval $ff(ν1::Real, ν2::Real, x::Real) = $ff(promote(ν1, ν2, x)...)
