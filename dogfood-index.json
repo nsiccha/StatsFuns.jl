@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "line": {
+    "repo": "nsiccha/StatsFuns.jl",
+    "ref": "dogfood",
+    "sha": "ca0c0e62e65ba7471e013d387e26df647e794fdf"
+  },
+  "upstream": {
+    "repo": "JuliaStats/StatsFuns.jl",
+    "ref": "master",
+    "sha": "08bf7f7445f392671b44c7b5f9eb6e60b3ed7ea1"
+  },
+  "prepared_at": "2026-11-18T12:16:30Z",
+  "problems": [
+    {
+      "id": "f-student-t-tails",
+      "role": "fix",
+      "title": "F and Student-t tail probabilities round to zero at finite inputs",
+      "summary": "The lower tail of Student-t with one degree of freedom is a Cauchy probability. At −10⁹ the CDF returns zero and its logarithm returns −Inf, although both values are representable.",
+      "repairs": [],
+      "upstream_refs": [
+        {
+          "url": "https://github.com/JuliaStats/StatsFuns.jl/issues/239",
+          "relation": "reports"
+        },
+        {
+          "url": "https://github.com/JuliaStats/StatsFuns.jl/pull/240",
+          "relation": "related"
+        }
+      ],
+      "draft": {
+        "title": "F and Student-t tail probabilities round to zero at finite inputs",
+        "body": "The lower tail of Student-t with one degree of freedom is a Cauchy probability. At −10⁹ the CDF returns zero and its logarithm returns −Inf, although both values are representable.\n\n```julia\nusing StatsFuns\nx = 1e9\np = atan(inv(x)) / π\n@show tdistcdf(1.0, -x) p           # expected ≈ 3.183098861837907e-10\n@show tdistlogcdf(1.0, -x) log(p)\n@show fdistccdf(1.0, 1.0, x^2)     # expected ≈ 2p\n```\n\nF and Student-t share the F-to-beta transformation. When the transformed variate rounds to one, the small complementary argument is lost. The fix evaluates that complement directly and exchanges the beta parameters and tail. This applies to the forward probabilities and their logarithms.",
+        "prepared_at": "2026-11-18T12:16:30Z"
+      },
+      "fix": {
+        "branch": "fix-fdist-extreme-tails",
+        "commits": [
+          {
+            "sha": "293cfe3e88a1d3cee49eccb067da1641d8409ef8",
+            "title": "Preserve small complementary beta arguments in F distribution tails",
+            "original": [
+              "293cfe3e88a1d3cee49eccb067da1641d8409ef8"
+            ]
+          }
+        ],
+        "why_together": "The F calculation also supplies the Student-t tails. One source change and its high-precision and closed-form regressions cover both distributions."
+      },
+      "depends_on": [],
+      "requires": [],
+      "validation": [
+        {
+          "base": "08bf7f7445f392671b44c7b5f9eb6e60b3ed7ea1",
+          "julia": "1.10.12",
+          "bounds": "forced",
+          "tests": [
+            "test/extreme_tails.jl",
+            "test/generic.jl",
+            "test/misc.jl",
+            "test/rmath.jl"
+          ],
+          "result": "passed",
+          "detail": "351,023 passed; two Rmath checks were marked broken by the suite. All 549 new extreme-tail checks passed. Used registered SpecialFunctions 2.9.2."
+        }
+      ]
+    }
+  ]
+}
